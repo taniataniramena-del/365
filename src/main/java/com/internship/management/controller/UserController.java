@@ -54,4 +54,51 @@ public class UserController {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
+
+    @PostMapping("/profile/cv")
+    public ResponseEntity<ApiResponse<String>> uploadCV(
+            Authentication authentication,
+            @RequestParam("file") MultipartFile file) {
+        try {
+            String email = authentication.getName();
+            String cvPath = userService.uploadCV(email, file);
+            return ResponseEntity.ok(ApiResponse.success("CV_UPLOADED", cvPath));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<ApiResponse<String>> changePassword(
+            Authentication authentication,
+            @RequestBody ChangePasswordRequest request) {
+        try {
+            String email = authentication.getName();
+            userService.changePassword(email, request.getCurrentPassword(), request.getNewPassword());
+            return ResponseEntity.ok(ApiResponse.success("PASSWORD_CHANGED", "Mot de passe modifié avec succès"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    public static class ChangePasswordRequest {
+        private String currentPassword;
+        private String newPassword;
+
+        public String getCurrentPassword() {
+            return currentPassword;
+        }
+
+        public void setCurrentPassword(String currentPassword) {
+            this.currentPassword = currentPassword;
+        }
+
+        public String getNewPassword() {
+            return newPassword;
+        }
+
+        public void setNewPassword(String newPassword) {
+            this.newPassword = newPassword;
+        }
+    }
 }

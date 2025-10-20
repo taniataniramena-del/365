@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { encadreurService } from '../../services/encadreurService';
 import { internService, InternDTO } from '../../services/internService';
 import { projectService, CreateProjectRequest } from '../../services/projectService';
+import { validateRequired, validateDateRange, validateMaxLength } from '../../utils/validation';
 
 interface ProjectFormProps {
   onClose: () => void;
@@ -58,8 +59,39 @@ export default function ProjectForm({ onClose, onSubmit, onSuccess }: ProjectFor
     e.preventDefault();
     setError('');
 
-    if (!formData.title || !formData.description || !formData.startDate || !formData.endDate) {
-      setError('Veuillez remplir tous les champs obligatoires');
+    const titleError = validateRequired(formData.title, 'Le titre');
+    if (titleError) {
+      setError(titleError);
+      return;
+    }
+
+    const titleLengthError = validateMaxLength(formData.title, 100, 'Le titre');
+    if (titleLengthError) {
+      setError(titleLengthError);
+      return;
+    }
+
+    const descriptionError = validateRequired(formData.description, 'La description');
+    if (descriptionError) {
+      setError(descriptionError);
+      return;
+    }
+
+    const startDateError = validateRequired(formData.startDate, 'La date de début');
+    if (startDateError) {
+      setError(startDateError);
+      return;
+    }
+
+    const endDateError = validateRequired(formData.endDate, 'La date de fin');
+    if (endDateError) {
+      setError(endDateError);
+      return;
+    }
+
+    const dateRangeError = validateDateRange(formData.startDate, formData.endDate);
+    if (dateRangeError) {
+      setError(dateRangeError);
       return;
     }
 

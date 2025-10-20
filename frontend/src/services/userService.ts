@@ -80,4 +80,11 @@ export const userService = {
     const result = await response.json();
     return result.data;
   },
+
+  changePassword: async (currentPassword: string, newPassword: string): Promise<void> => {
+    await apiService.post('/users/change-password', {
+      currentPassword,
+      newPassword,
+    });
+  },
 };

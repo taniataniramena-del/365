@@ -47,6 +47,9 @@ export default function Header({ onNavigate }: HeaderProps) {
       }
     };
     loadNotifications();
+
+    const interval = setInterval(loadNotifications, 30000);
+    return () => clearInterval(interval);
   }, [authUser]);
 
   // 🔹 Charger le profil utilisateur depuis le backend
@@ -144,7 +147,13 @@ export default function Header({ onNavigate }: HeaderProps) {
                     <h3 className="font-semibold text-gray-900 dark:text-white">Notifications</h3>
                     <div className="flex items-center space-x-2">
                       <button
-                        onClick={() => console.log('Mark all as read')}
+                        onClick={async () => {
+                          if (authUser?.id) {
+                            await notificationService.markAllAsRead(authUser.id);
+                            const data = await notificationService.getUserNotifications(authUser.id);
+                            setNotifications(data);
+                          }
+                        }}
                         className="text-xs text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300"
                       >
                         Tout marquer comme lu

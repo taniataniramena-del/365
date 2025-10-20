@@ -34,5 +34,9 @@ export const notificationService = {
 
   async deleteNotification(notificationId: number): Promise<void> {
     return apiService.delete<void>(`/notifications/${notificationId}`);
+  },
+
+  async createNotification(notification: Omit<NotificationDTO, 'id' | 'createdAt' | 'isRead'>): Promise<NotificationDTO> {
+    return apiService.post<NotificationDTO>('/notifications', notification);
   }
 };

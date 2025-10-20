@@ -126,35 +126,53 @@ export default function Projects() {
     setShowProjectDetail(true);
   };
 
-  const handleProjectCreated = () => {
-    const loadProjects = async () => {
-      if (!userId) return;
-      try {
-        let fetchedProjects: ProjectDTO[] = [];
-        if (userRole === "ADMIN") {
-          fetchedProjects = await projectService.getAllProjects();
-        } else if (userRole === "ENCADREUR") {
-          const encadreurData = await encadreurService.getEncadreurByUserId(
-            userId
-          );
-          fetchedProjects = await projectService.getAllProjects({
-            encadreurId: encadreurData.id,
+  const handleProjectCreated = async () => {
+    if (!userId) return;
+    try {
+      let fetchedProjects: ProjectDTO[] = [];
+
+      if (userRole === "ADMIN") {
+        fetchedProjects = await projectService.getAllProjects();
+      } else if (userRole === "ENCADREUR") {
+        const encadreurData = await encadreurService.getEncadreurByUserId(
+          userId
+        );
+        fetchedProjects = await projectService.getAllProjects({
+          encadreurId: encadreurData.encadreurId,
+        });
+      } else if (userRole === "STAGIAIRE") {
+        const internData = await internService.getAllInterns();
+        const currentIntern = internData.find((i) => i.userId === userId);
+
+        if (currentIntern) {
+          const fetchprojectAll = await projectService.getAllProjects({
+            encadreurId: currentIntern.encadreurId,
           });
-        } else if (userRole === "STAGIAIRE") {
-          const internData = await internService.getAllInterns();
-          const currentIntern = internData.find((i) => i.userId === userId);
-          if (currentIntern) {
-            fetchedProjects = await projectService.getAllProjects({
-              stagiaireId: currentIntern.id,
-            });
-          }
+
+          const stagiaireRecherche = currentIntern.userId.toString();
+          const projetsTrouves = fetchprojectAll
+            .filter(
+              (projet) =>
+                projet.stagiaireId &&
+                projet.stagiaireId
+                  .split(",")
+                  .map((id) => id.trim())
+                  .includes(stagiaireRecherche)
+            )
+            .map((projet) => projet.id);
+
+          const projetsSelectionnes = fetchprojectAll.filter((projet) =>
+            projetsTrouves.includes(projet.id)
+          );
+
+          fetchedProjects = projetsSelectionnes;
         }
-        setProjects(fetchedProjects);
-      } catch (error: any) {
-        console.error("Erreur lors du rechargement des projets:", error);
       }
-    };
-    loadProjects();
+
+      setProjects(fetchedProjects);
+    } catch (error: any) {
+      console.error("Erreur lors du rechargement des projets:", error);
+    }
   };
 
   return (

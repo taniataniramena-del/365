@@ -178,6 +178,72 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
     }
   };
 
+  const handleChangePassword = async () => {
+    if (!currentPassword) {
+      setError('Le mot de passe actuel est requis');
+      setTimeout(() => setError(null), 3000);
+      return;
+    }
+
+    if (!newPassword) {
+      setError('Le nouveau mot de passe est requis');
+      setTimeout(() => setError(null), 3000);
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError('Les mots de passe ne correspondent pas');
+      setTimeout(() => setError(null), 3000);
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setError('Le mot de passe doit contenir au moins 8 caractères');
+      setTimeout(() => setError(null), 3000);
+      return;
+    }
+
+    if (!/[A-Z]/.test(newPassword)) {
+      setError('Le mot de passe doit contenir au moins une majuscule');
+      setTimeout(() => setError(null), 3000);
+      return;
+    }
+
+    if (!/[a-z]/.test(newPassword)) {
+      setError('Le mot de passe doit contenir au moins une minuscule');
+      setTimeout(() => setError(null), 3000);
+      return;
+    }
+
+    if (!/[0-9]/.test(newPassword)) {
+      setError('Le mot de passe doit contenir au moins un chiffre');
+      setTimeout(() => setError(null), 3000);
+      return;
+    }
+
+    if (!/[@#$%^&+=!]/.test(newPassword)) {
+      setError('Le mot de passe doit contenir au moins un caractère spécial');
+      setTimeout(() => setError(null), 3000);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      await userService.changePassword(currentPassword, newPassword);
+      setSuccess('Mot de passe modifié avec succès');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err: any) {
+      setError(err.message || 'Erreur lors du changement de mot de passe');
+      setTimeout(() => setError(null), 3000);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!isOpen || !type) return null;
 
   const renderUserManagement = () => (
@@ -585,11 +651,12 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
               Assurez-vous de bien mémoriser votre nouveau mot de passe.
             </p>
             <button
-              disabled={!currentPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword}
+              onClick={handleChangePassword}
+              disabled={!currentPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword || loading}
               className="bg-red-600 text-white px-6 py-2.5 rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <KeyRound className="h-4 w-4" />
-              <span>Changer le mot de passe</span>
+              <span>{loading ? 'Modification...' : 'Changer le mot de passe'}</span>
             </button>
           </div>
         </div>

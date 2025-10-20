@@ -13,6 +13,8 @@ export default function Settings() {
   const [profileImage, setProfileImage] = useState<string>('');
   const [fullName, setFullName] = useState<string>('');
   const [role, setRole] = useState<string>('');
+  const [pendingImage, setPendingImage] = useState<File | null>(null);
+  const [tempImageUrl, setTempImageUrl] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Charger le profil utilisateur une seule fois à l'ouverture du composant
@@ -31,22 +33,37 @@ export default function Settings() {
     loadProfile();
   }, []); // ✅ dépendances vides pour éviter la boucle
 
-  // Mettre à jour l'image et le Header uniquement lorsqu'on change l'avatar
-  const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    setPendingImage(file);
+    const objectUrl = URL.createObjectURL(file);
+    setTempImageUrl(objectUrl);
+  };
+
+  const handleSaveImage = async () => {
+    if (!pendingImage) return;
+
     try {
-      const avatarUrl = await userService.uploadAvatar(file);
+      const avatarUrl = await userService.uploadAvatar(pendingImage);
       const fullUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:8080'}${avatarUrl}`;
       setProfileImage(fullUrl);
-
-      // Met à jour instantanément le Header
       updateProfile({ avatar: fullUrl });
-
-      // Met à jour le backend
       await userService.updateProfile({ avatar: avatarUrl });
+
+      setPendingImage(null);
+      setTempImageUrl('');
     } catch (err) {
       console.error('Erreur de mise à jour de la photo:', err);
+    }
+  };
+
+  const handleCancelImage = () => {
+    setPendingImage(null);
+    if (tempImageUrl) {
+      URL.revokeObjectURL(tempImageUrl);
+      setTempImageUrl('');
     }
   };
 
@@ -124,7 +141,7 @@ export default function Settings() {
           <div className="flex items-center space-x-6">
             <div className="relative">
               <img
-                src={profileImage}
+                src={tempImageUrl || profileImage}
                 alt="Profile"
                 className="h-24 w-24 rounded-full object-cover border-4 border-gray-200 dark:border-gray-700"
               />
@@ -142,9 +159,25 @@ export default function Settings() {
                 className="hidden"
               />
             </div>
-            <div>
+            <div className="flex-1">
               <h4 className="font-medium text-gray-900 dark:text-white">{fullName}</h4>
               <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{role}</p>
+              {pendingImage && (
+                <div className="flex gap-2 mt-3">
+                  <button
+                    onClick={handleSaveImage}
+                    className="px-4 py-1.5 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg transition-colors"
+                  >
+                    Sauvegarder la photo
+                  </button>
+                  <button
+                    onClick={handleCancelImage}
+                    className="px-4 py-1.5 bg-gray-400 hover:bg-gray-500 text-white text-sm rounded-lg transition-colors"
+                  >
+                    Annuler
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
