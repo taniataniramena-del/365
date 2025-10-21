@@ -26,6 +26,8 @@ public class UserDTO {
 
     private String phone;
     private String avatar;
+    private String cvPath;
+    private String dateNaissance;
     private LocalDateTime createdAt;
 
     public static UserDTO fromEntity(User user) {
@@ -39,8 +41,10 @@ public class UserDTO {
                 .department(user.getDepartment())
                 .phone(user.getPhone())
                 .avatar(user.getAvatar())
+                .cvPath(user.getCvPath())
+                .dateNaissance(user.getDateNaissance())
                 .createdAt(user.getCreatedAt())
-
+                .updatedAt(user.getUpdatedAt())
                 .build();
     }
 }

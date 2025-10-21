@@ -50,8 +50,18 @@ class ApiService {
       throw error;
     }
 
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      return {} as T;
+    }
+
     try {
-      const jsonResponse = await response.json();
+      const text = await response.text();
+      if (!text || text.trim() === '') {
+        return {} as T;
+      }
+
+      const jsonResponse = JSON.parse(text);
 
       if (jsonResponse && typeof jsonResponse === 'object' && 'success' in jsonResponse && 'data' in jsonResponse) {
         if (!jsonResponse.success && jsonResponse.error) {

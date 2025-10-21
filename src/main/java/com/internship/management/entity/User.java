@@ -29,6 +29,8 @@ public class User {
     private String phone;
     private String department;
     private String avatar;
+    private String cvPath;
+    private String dateNaissance;
 
     @Enumerated(EnumType.STRING)
     private Role role;

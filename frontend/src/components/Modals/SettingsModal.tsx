@@ -33,6 +33,8 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
   });
 
   const [avatar, setAvatar] = useState<string>('');
+  const [tempAvatar, setTempAvatar] = useState<string>('');
+  const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -69,27 +71,55 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
     }));
   };
 
-  const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const avatarUrl = await userService.uploadAvatar(file);
-        const fullAvatarUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:8080'}${avatarUrl}`;
-        setAvatar(fullAvatarUrl);
-
-        await userService.updateProfile({ avatar: avatarUrl });
-
-        setSuccess('Photo de profil mise à jour avec succès');
-        setTimeout(() => setSuccess(null), 3000);
-      } catch (err: any) {
-        setError(err.message || 'Erreur lors de la mise à jour de la photo');
+      if (!file.type.startsWith('image/')) {
+        setError('Le fichier doit être une image');
         setTimeout(() => setError(null), 3000);
-      } finally {
-        setLoading(false);
+        return;
       }
+
+      setPendingAvatarFile(file);
+      const objectUrl = URL.createObjectURL(file);
+      setTempAvatar(objectUrl);
+    }
+  };
+
+  const handleSaveAvatar = async () => {
+    if (!pendingAvatarFile) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const avatarUrl = await userService.uploadAvatar(pendingAvatarFile);
+      const fullAvatarUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:8080'}${avatarUrl}`;
+      setAvatar(fullAvatarUrl);
+
+      await userService.updateProfile({ avatar: avatarUrl });
+
+      setPendingAvatarFile(null);
+      if (tempAvatar) {
+        URL.revokeObjectURL(tempAvatar);
+        setTempAvatar('');
+      }
+
+      setSuccess('Photo de profil mise à jour avec succès');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err: any) {
+      setError(err.message || 'Erreur lors de la mise à jour de la photo');
+      setTimeout(() => setError(null), 3000);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelAvatar = () => {
+    setPendingAvatarFile(null);
+    if (tempAvatar) {
+      URL.revokeObjectURL(tempAvatar);
+      setTempAvatar('');
     }
   };
 
@@ -288,10 +318,15 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
           <div className="flex items-center space-x-6 mb-6">
             <div className="relative">
               <img
-                src={avatar}
+                src={tempAvatar || avatar}
                 alt="Profile"
                 className="h-28 w-28 rounded-full object-cover border-4 border-orange-200 dark:border-orange-700 shadow-lg"
               />
+              {pendingAvatarFile && (
+                <div className="absolute -top-2 -right-2 bg-green-500 text-white p-1 rounded-full">
+                  <Eye className="h-4 w-4" />
+                </div>
+              )}
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
@@ -317,11 +352,30 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
                   {authUser?.role || 'Utilisateur'}
                 </span>
               </p>
-              {!isEditing && (
+              {!isEditing && !pendingAvatarFile && (
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                   <Eye className="h-3 w-3 inline mr-1" />
                   Mode prévisualisation - Cliquez sur "Modifier" pour éditer
                 </p>
+              )}
+              {pendingAvatarFile && (
+                <div className="flex gap-2 mt-3">
+                  <button
+                    onClick={handleSaveAvatar}
+                    disabled={loading}
+                    className="px-4 py-1.5 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1"
+                  >
+                    <Save className="h-3 w-3" />
+                    {loading ? 'Sauvegarde...' : 'Sauvegarder photo'}
+                  </button>
+                  <button
+                    onClick={handleCancelAvatar}
+                    disabled={loading}
+                    className="px-4 py-1.5 bg-gray-400 hover:bg-gray-500 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    Annuler
+                  </button>
+                </div>
               )}
             </div>
           </div>
